@@ -1,4 +1,4 @@
-# Brotato Wiki Tools
+# Brotato WikiTools
 
 Outputs data for the wiki.
 
