@@ -35,8 +35,8 @@ var config = {
 	output_save   = true,   # If true, saves the output:  user://wiki-output.html - %appdata%/Brotato/wiki-output.html
 
 	# Items
-	skip_vanilla        = true,   # If true, vanilla items are ignored in the output
 	items_count_vanilla = 158,    # Number of items in vanilla
+	skip_vanilla        = true,   # If true, vanilla items are ignored in the output
 	sort_by_alpha       = true,   # Sort alphabetically (abc)
 	sort_by_tier        = true,   # Sort by rarity/tier
 	skip_items = [                # Hide certain items from the loop. Accepts item IDs (`my_id`)
@@ -114,29 +114,29 @@ func statscard_log():
 	# Items - Sort by Tier
 	# ----------------------------------------
 
+	var items_tier1 = []
+	var items_tier2 = []
+	var items_tier3 = []
+	var items_tier4 = []
+
+	for i in items_arr.size():
+		if items_arr[i].tier == 0:
+			items_tier1.push_back(items_arr[i])
+
+	for i in items_arr.size():
+		if items_arr[i].tier == 1:
+			items_tier2.push_back(items_arr[i])
+
+	for i in items_arr.size():
+		if items_arr[i].tier == 2:
+			items_tier3.push_back(items_arr[i])
+
+	for i in items_arr.size():
+		if items_arr[i].tier == 3:
+			items_tier4.push_back(items_arr[i])
+
 	# Optional: Sort by rarity/tier
 	if config.sort_by_tier:
-		var items_tier1 = []
-		var items_tier2 = []
-		var items_tier3 = []
-		var items_tier4 = []
-
-		for i in items_arr.size():
-			if items_arr[i].tier == 0:
-				items_tier1.push_back(items_arr[i])
-
-		for i in items_arr.size():
-			if items_arr[i].tier == 1:
-				items_tier2.push_back(items_arr[i])
-
-		for i in items_arr.size():
-			if items_arr[i].tier == 2:
-				items_tier3.push_back(items_arr[i])
-
-		for i in items_arr.size():
-			if items_arr[i].tier == 3:
-				items_tier4.push_back(items_arr[i])
-
 		items_arr.clear()
 		items_arr.append_array(items_tier1)
 		items_arr.append_array(items_tier2)
@@ -158,22 +158,23 @@ func statscard_log():
 		if config.mod_unreleased:
 			html += " This version hasn't been released yet."
 		html += "\n\nCurrent items total: " + str( items_arr.size() )
+		html += " <small>({{Color|tier1|" + str(items_tier1.size()) + "}}, {{Color|tier2|" + str(items_tier2.size()) + "}}, {{Color|tier3|" + str(items_tier3.size()) + "}}, {{Color|tier4|" + str(items_tier4.size()) + "}})</small>"
 
 	# Disclaimers
 	if config.add_disclaimers:
 		html += "\n\n\n''{{Color|grey|This page content was automatically generated so may have issues.}}''"
-		html += "\n\n''{{Color|pastelred|This page uses custom scripts that are often updated. Please use Ctrl+F5 to ensure your browser is using the latest version of them.}}''"
+		html += "\n\n''{{Color|pastelred|This page uses custom scripts that are often updated. If something doesn't work, please use Ctrl+F5 to ensure your browser is using the latest script updates.}}''"
 		html += "\n\n"
 
 	# Wrap & filter buttons
 	if config.center_wrap:
 		html += '\n<div class="statscard-grid" style="margin: 0 auto; max-width: 1247px;">'
 		if config.add_controls:
-			html += '\n	{{StatsCard_GridToggles}}'
+			html += '\n	{{StatsCard_GridToggles|extra_btns=1}}'
 		html += '\n\n	<div class="statscard-grid__inner" style="height: 80vh; overflow: auto; max-width: 1247px;">'
 
 	if !config.center_wrap && config.add_controls:
-		html += '\n	{{StatsCard_GridToggles}}'
+		html += '\n	{{StatsCard_GridToggles|extra_btns=1}}'
 		html += "\n"
 
 	# ----------------------------------------
@@ -290,7 +291,7 @@ func generate_stats_card(item_data, indent_num = 0):
 		stat_num += 1
 
 	if config.show_cost:
-		statscard += "\n" + indent + "| stat" + str(stat_num) + "  = <small>{{Color|cream|Cost: " + str(item_data.value) + "}}</small>"
+		statscard += "\n" + indent + "| stat" + str(stat_num) + "  = <span class='ibox__stats-costs' data-target-type='misc' style='display:none;'><small>{{Color|cream|Cost: " + str(item_data.value) + "}}</small></span>"
 		stat_num += 1
 
 	if config.show_tags:
@@ -299,7 +300,7 @@ func generate_stats_card(item_data, indent_num = 0):
 			tags_text = arr_join(item_data.tags, "<br>")
 		else:
 			tags_text = "''none''"
-		statscard += "\n" + indent + "| stat" + str(stat_num) + "  = <small>{{Color|grey|Tags:<br>" + tags_text + "}}</small>"
+		statscard += "\n" + indent + "| stat" + str(stat_num) + "  = <span class='ibox__stats-tags' data-target-type='misc' style='display:none;'><small>{{Color|grey|Tags:<br>" + tags_text + "}}</small></span>"
 		stat_num += 1
 
 	statscard += "\n" + indent + "}}"
