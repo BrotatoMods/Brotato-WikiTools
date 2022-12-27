@@ -1,27 +1,32 @@
 extends Node
 
-# Name:    WikiTools
-# Version: 1.0.0
-# Updated: 2022-12-16 (16th Dec)
-# Author:  Darkly77
+# Name:     WikiTools
+# Version:  1.2.0
+# Author:   Darkly77
+# Editors:  None (contributors: add your name here and remove this parenthesised text)
+# Repo:     https://github.com/BrotatoMods/Brotato-WikiTools
 #
 # Usage: Add to your project and autoload this script. Call it `WikiTools`.
-# Replace the function in _ready with whichever one you want to run
+# Update the settings to match your mod and preferences.
 #
-# Results can either be printed to the debug log:
-#   %appdata%/Brotato/logs/godot.log
-# Or saved to a file:
+# Results can be saved to a file (config.output_save):
 #   %appdata%/Brotato/wiki-output.html
+# Or printed to the debug log (config.output_print):
+#   %appdata%/Brotato/logs/godot.log
 
 
 # Config
 # ==============================================================================
 
-var image_prefixes = {
-	none       = "", # use for vanilla
-	invasion   = "Space_Gladiators-", # Mod:Invasion
-	extatonion = "Mod-Extatonion-",   # Mod:Extatonion
-	# Add your own mod setting here, then apply it to config.image_prefix
+var mod_config = {
+	mod_link        = 'Mod:Invasion', # Mod page name. Used to show a link back to the mod page
+	mod_version     = '0.5.0',  # Shown above the content
+	mod_unreleased  = true,     # If true, the output states that the shown items are part of an unreleased version
+
+	# Uncomment whichever applies to your mod, or add your own
+#	image_prefix = "",                  # Vanilla
+#	image_prefix = "Mod-Extatonion-",   # Mod:Extatonion
+	image_prefix = "Space_Gladiators-", # Mod:Invasion
 }
 
 var config = {
@@ -31,8 +36,8 @@ var config = {
 	do_basiclog   = false,  # If true, does a basic log listing all items, to godot.log
 
 	# Saving
-	output_print  = false,  # If true, prints the output: user://godot.log - %appdata%/Brotato/godot.log
 	output_save   = true,   # If true, saves the output:  user://wiki-output.html - %appdata%/Brotato/wiki-output.html
+	output_print  = false,  # If true, prints the output: user://godot.log - %appdata%/Brotato/godot.log
 
 	# Items
 	items_count_vanilla = 158,    # Number of items in vanilla
@@ -44,24 +49,23 @@ var config = {
 	],
 
 	# Output: Top Text
-	mod_link        = 'Mod:Invasion', # Mod page name. Used to show a link back to the mod page
-	add_toptext     = true,     # If true, adds extra info above everything else
-	add_disclaimers = true,     # If true, adds notes before the main output, saying the page is auto generated and uses JS
-	mod_version     = '1.2.0',  # Shown above the content
-	mod_unreleased  = true,     # If true, the output states that the shown items are part of an unreleased version
+	add_toptext     = true,  # If true, adds extra info above everything else
+	add_disclaimers = true,  # If true, adds notes before the main output, saying the page is auto generated and uses JS
+	add_table       = false, # If true, adds a table before the main grid, showing all the items (eg. see Mod:Invasion)
 
-	# Output: Table/Wrapper
-	max_cols      = 5,       # Number of table columns. 5 works best on desktop
-	add_controls  = true,    # If true, adds {{StatsCard_GridToggles}}
-	center_wrap   = true,    # If true, wraps the table in a center-aligned div
+	# Output: Top Text - Mod Info
+	mod_link        = mod_config.mod_link,
+	mod_version     = mod_config.mod_version,
+	mod_unreleased  = mod_config.mod_unreleased,
 
 	# Output: General
+	max_cols      = 5,       # Number of columns in the items grid (5)
 	show_cost     = true,    # If true, shows the item cost in small text, after all its other stats
 	show_tags     = true,    # If true, shows the item tags in small text, after the cost and other stats
 	type          = "item",  # Type (either: item, weapon, character, difficulty). Only "item" is supported atm
 
-	# Output: Image
-	image_prefix = image_prefixes.invasion, # Change to your mod's image prefix (string). Leave blank (image_prefixes.none) for vanlla items
+	# Output: Images
+	image_prefix = mod_config.image_prefix, # String to add before image filenames
 }
 
 
@@ -99,7 +103,7 @@ func statscard_log():
 		for i in ItemService.items.size():
 			if config.skip_vanilla && (i+1 <= config.items_count_vanilla):
 				continue
-			if config.skip_items.size() > 0 and config.skip_items.find( ItemService.items[i].my_id ) != -1:
+			if config.skip_items.size() > 0 and config.skip_items.find(ItemService.items[i].my_id) != -1:
 				continue
 			items_arr.push_back(ItemService.items[i])
 
@@ -151,14 +155,9 @@ func statscard_log():
 
 	var html = ""
 
-	# Top text
+	# Back button
 	if config.add_toptext:
-		html += '[[' + config.mod_link + '|< Back to Mod Page]]'
-		html += "\n\nThese items are for version: '''" + config.mod_version + "'''."
-		if config.mod_unreleased:
-			html += " This version hasn't been released yet."
-		html += "\n\nCurrent items total: " + str( items_arr.size() )
-		html += " <small>({{Color|tier1|" + str(items_tier1.size()) + "}}, {{Color|tier2|" + str(items_tier2.size()) + "}}, {{Color|tier3|" + str(items_tier3.size()) + "}}, {{Color|tier4|" + str(items_tier4.size()) + "}})</small>"
+		html += '{{LinkButton|' + config.mod_link + '|< Back to ' + config.mod_link + '}}'
 
 	# Disclaimers
 	if config.add_disclaimers:
@@ -166,60 +165,118 @@ func statscard_log():
 		html += "\n\n''{{Color|pastelred|This page uses custom scripts that are often updated. If something doesn't work, please use Ctrl+F5 to ensure your browser is using the latest script updates.}}''"
 		html += "\n\n"
 
-	# Wrap & filter buttons
-	if config.center_wrap:
-		html += '\n<div class="statscard-grid" style="margin: 0 auto; max-width: 1247px;">'
-		if config.add_controls:
-			html += '\n	{{StatsCard_GridToggles|extra_btns=1}}'
-		html += '\n\n	<div class="statscard-grid__inner" style="height: 80vh; overflow: auto; max-width: 1247px;">'
+	# Top text
+	if config.add_toptext:
+		html += "\nThese items are for version: '''" + config.mod_version + "'''."
+		if config.mod_unreleased:
+			html += " This version hasn't been released yet."
+		html += "\n\nCurrent items total: " + str(items_arr.size())
+		html += " <small>({{Color|tier1|" + str(items_tier1.size()) + "}}, {{Color|tier2|" + str(items_tier2.size()) + "}}, {{Color|tier3|" + str(items_tier3.size()) + "}}, {{Color|tier4|" + str(items_tier4.size()) + "}})</small>"
 
-	if !config.center_wrap && config.add_controls:
-		html += '\n	{{StatsCard_GridToggles|extra_btns=1}}'
-		html += "\n"
+	# Items table
+	# @todo: Move to a func with a loop
+	if config.add_table:
+		html += "\n\n\n"
+		html += str(items_arr.size()) + ' new items:'
+		html += '\n<table class="wikitable">' \
+			+ '\n	<tr>' \
+			+ '\n		<th>Tier</th>' \
+			+ '\n		<th>#</th>' \
+			+ '\n		<th>Items</th>' \
+			+ '\n	</tr>'
+		# Legendary
+		html += '' \
+			+ '\n	<tr>' \
+			+ '\n		<td>{{Color|tier4|Legendary}}</td>' \
+			+ '\n		<td>' + str(items_tier4.size()) + '</td>' \
+			+ '\n		<td>'
+		for i in items_tier4.size():
+			var item_data = items_tier4[i] # ItemService.items[i]
+			var item_name = tr(item_data.name)
+			html += '{{Color|tier4|' + item_name + '}}'
+			if i < (items_tier4.size() - 1):
+				html += ', '
+		html += '</td>' \
+			+ '\n	</tr>'
+		# Rare
+		html += '' \
+			+ '\n	<tr>' \
+			+ '\n		<td>{{Color|tier3|Rare}}</td>' \
+			+ '\n		<td>' + str(items_tier3.size()) + '</td>' \
+			+ '\n		<td>'
+		for i in items_tier3.size():
+			var item_data = items_tier3[i] # ItemService.items[i]
+			var item_name = tr(item_data.name)
+			html += '{{Color|tier3|' + item_name + '}}'
+			if i < (items_tier3.size() - 1):
+				html += ', '
+		html += '</td>' \
+			+ '\n	</tr>'
+		# Uncommon
+		html += '' \
+			+ '\n	<tr>' \
+			+ '\n		<td>{{Color|tier2|Uncommon}}</td>' \
+			+ '\n		<td>' + str(items_tier2.size()) + '</td>' \
+			+ '\n		<td>'
+		for i in items_tier2.size():
+			var item_data = items_tier2[i] # ItemService.items[i]
+			var item_name = tr(item_data.name)
+			html += '{{Color|tier2|' + item_name + '}}'
+			if i < (items_tier2.size() - 1):
+				html += ', '
+		html += '</td>' \
+			+ '\n	</tr>'
+		# Common
+		html += '' \
+			+ '\n	<tr>' \
+			+ '\n		<td>{{Color|tier1|Common}}</td>' \
+			+ '\n		<td>' + str(items_tier1.size()) + '</td>' \
+			+ '\n		<td>'
+		for i in items_tier1.size():
+			var item_data = items_tier1[i] # ItemService.items[i]
+			var item_name = tr(item_data.name)
+			html += '{{Color|tier1|' + item_name + '}}'
+			if i < (items_tier1.size() - 1):
+				html += ', '
+		html += '</td>' \
+			+ '\n	</tr>'
+		html += "\n</table>"
+		html += '\n'
+
+	# Wrap & filter buttons
+	html += '\n\n\n<div class="statscard-grid" style="margin: 0 auto; max-width: 1230px;">'
+	html += '\n	{{StatsCard_GridToggles|extra_btns=1}}'
+	html += '\n\n	<div class="statscard-grid__main" style="max-height: 80vh; overflow: auto; display: flex; flex-wrap: wrap;">'
 
 	# ----------------------------------------
 	# Main Loop
 	# ----------------------------------------
 
 	var current_col = 1
-	var item_num = 1
+	# var item_num = 1
 
-	html += '\n<table class="itembox-table" style="color:#eee; background:transparent; vertical-align:top;">'
+	for i in items_arr.size(): # ItemService.items.size()
 
-	# for i in ItemService.items.size():
-	for i in items_arr.size():
+		var item_data = items_arr[i] # ItemService.items[i]
 
-		# var item_data = ItemService.items[i]
-		var item_data = items_arr[i]
+		# var padding_right = "padding-right: 20px;"
+		# if current_col == config.max_cols:
+			# padding_right = "padding-right: 0;"
 
-		# Helpful info after each </td> - shows col num/total cols
-		var info_comment = "<!--" + str(item_num) + " of " + str(items_arr.size()) + "-->"
-
-		if current_col == 1:
-			html += '\n	<tr>'
-
-		html += '\n		<td style="vertical-align: top; padding-bottom: 20px; padding-right: 20px;">'
-		html += '\n' + generate_stats_card( item_data, 3 )
-		html += '\n		</td>' + info_comment
+		html += '' \
+			+ '\n		<div id="' + item_data.my_id + '" class="statscard-grid__item" style="flex: 0 0 auto; padding: 0 20px 20px; margin-left: -20px;">' \
+			+ '\n' + generate_stats_card( item_data, 3 ) \
+			+ '\n		</div>' \
+			# + "<!--" + str(item_num) + " of " + str(items_arr.size()) + "-->"
 
 		if current_col == config.max_cols:
-			html += '\n	</tr>'
 			current_col = 0
 
 		current_col += 1
-		item_num += 1
+		# item_num += 1
 
-	# Add empty columns if needed
-	if items_arr.size() % 5 != 0:
-		var empty_cols_count = config.max_cols - (items_arr.size() % config.max_cols) # modulus (get remainder)
-		html += '\n		<td style="vertical-align: top; padding-bottom: 20px; padding-right: 20px;"><!-- EMPTY --></td>'.repeat(empty_cols_count)
-		html += '\n	</tr>'
-
-	html += '\n</table>'
-
-	if config.center_wrap:
-		html += '\n	</div> <!--/.statscard-grid-->'
-		html += '\n</div> <!--/.statscard-grid__inner-->'
+	html += '\n	</div>' # <!--/.statscard-grid-->
+	html += '\n</div>' # <!--/.statscard-grid__inner-->
 
 	if config.output_print:
 		print(html)
@@ -287,6 +344,7 @@ func generate_stats_card(item_data, indent_num = 0):
 		var effect = item_data.effects[i]
 		var effect_text = effect.get_text()
 		var effect_text_edit = replace_bbcode( effect_text )
+		# var effect_text_edit = effect_text #@TODO
 		statscard += "\n" + indent + "| stat" + str(i + 1) + "  = " + effect_text_edit # eg "stat1"
 		stat_num += 1
 
@@ -313,9 +371,14 @@ func replace_bbcode(text:String)->String:
 	var text_edit = text
 
 	# Dynamic Stats
-	text_edit = text_edit.replacen( "[+-0]", "" )
+	text_edit = text_edit.replacen( "[[color=red]+0[/color]]", "" )
+	text_edit = text_edit.replacen( "[[color=red]-0[/color]]", "" )
 	text_edit = text_edit.replacen( "[[color=red]+-0[/color]]", "" )
+	text_edit = text_edit.replacen( "[[color=#00ff00]+0[/color]]", "" ) # green
+	text_edit = text_edit.replacen( "[[color=#00ff00]-0[/color]]", "" )
 	text_edit = text_edit.replacen( "[[color=#00ff00]+-0[/color]]", "" )
+	text_edit = text_edit.replacen( "[[color=white]+0[/color]]", "" )
+	text_edit = text_edit.replacen( "[[color=white]-0[/color]]", "" )
 	text_edit = text_edit.replacen( "[[color=white]+-0[/color]]", "" )
 
 	# Colors
@@ -324,30 +387,55 @@ func replace_bbcode(text:String)->String:
 	text_edit = text_edit.replacen( "[color=red]", "{{Color|red|" )       # Utils.NEG_COLOR_STR
 	text_edit = text_edit.replacen( "[/color]", "}}" )
 
+	# Normalise Image Sizes
+	# This is needed because the image sizes depend on your "Font Size" setting,
+	# See `get_scaling_stat_text` in utils.gd ("var w = 20 * ProgressData.settings.font_size")
+	#  80% = 16x16
+	# 100% = 20x20 (we're setting all image sizes to this)
+	# 105% = 21x21
+	# 125% = 25x25
+	text_edit = text_edit.replacen( "[img=16x16]", "[img=20x20]" )
+	text_edit = text_edit.replacen( "[img=17x17]", "[img=20x20]" )
+	text_edit = text_edit.replacen( "[img=18x18]", "[img=20x20]" )
+	text_edit = text_edit.replacen( "[img=19x19]", "[img=20x20]" )
+	text_edit = text_edit.replacen( "[img=21x21]", "[img=20x20]" )
+	text_edit = text_edit.replacen( "[img=22x22]", "[img=20x20]" )
+	text_edit = text_edit.replacen( "[img=23x23]", "[img=20x20]" )
+	text_edit = text_edit.replacen( "[img=24x24]", "[img=20x20]" )
+	text_edit = text_edit.replacen( "[img=25x25]", "[img=20x20]" )
+
 	# Stat Icons
-	text_edit = text_edit.replacen( "[img=23x23]res://items/stats/armor.png[/img]", "{{StatIcon|Armor}}" )
-	text_edit = text_edit.replacen( "[img=23x23]res://items/stats/attack_speed.png[/img]", "{{StatIcon|Attack Speed}}" )
-	text_edit = text_edit.replacen( "[img=23x23]res://items/stats/crit_chance.png[/img]", "{{StatIcon|Crit Chance}}" )
-	text_edit = text_edit.replacen( "[img=23x23]res://items/stats/dodge.png[/img]", "{{StatIcon|Dodge}}" )
-	text_edit = text_edit.replacen( "[img=23x23]res://items/stats/elemental_damage.png[/img]", "{{StatIcon|Elemental Damage}}" )
-	text_edit = text_edit.replacen( "[img=23x23]res://items/stats/engineering.png[/img]", "{{StatIcon|Engineering}}" )
-	text_edit = text_edit.replacen( "[img=23x23]res://items/stats/harvesting.png[/img]", "{{StatIcon|Harvesting}}" )
-	text_edit = text_edit.replacen( "[img=23x23]res://items/stats/hp_regeneration.png[/img]", "{{StatIcon|Hp Regeneration}}" )
-	text_edit = text_edit.replacen( "[img=23x23]res://items/stats/lifesteal.png[/img]", "{{StatIcon|Lifesteal}}" )
-	text_edit = text_edit.replacen( "[img=23x23]res://items/stats/luck.png[/img]", "{{StatIcon|Luck}}" )
-	text_edit = text_edit.replacen( "[img=23x23]res://items/stats/max_hp.png[/img]", "{{StatIcon|Max HP}}" )
-	text_edit = text_edit.replacen( "[img=23x23]res://items/stats/melee_damage.png[/img]", "{{StatIcon|Melee Damage}}" )
-	text_edit = text_edit.replacen( "[img=23x23]res://items/stats/percent_damage.png[/img]", "{{StatIcon|Percent Damage}}" )
-	text_edit = text_edit.replacen( "[img=23x23]res://items/stats/range.png[/img]", "{{StatIcon|Range}}" )
-	text_edit = text_edit.replacen( "[img=23x23]res://items/stats/ranged_damage.png[/img]", "{{StatIcon|Ranged Damage}}" )
-	text_edit = text_edit.replacen( "[img=23x23]res://items/stats/speed.png[/img]", "{{StatIcon|Speed}}" )
+	text_edit = text_edit.replacen( "[img=20x20]res://items/stats/armor.png[/img]",            "{{StatIcon|Armor}}" )
+	text_edit = text_edit.replacen( "[img=20x20]res://items/stats/attack_speed.png[/img]",     "{{StatIcon|Attack Speed}}" )
+	text_edit = text_edit.replacen( "[img=20x20]res://items/stats/crit_chance.png[/img]",      "{{StatIcon|Crit Chance}}" )
+	text_edit = text_edit.replacen( "[img=20x20]res://items/stats/dodge.png[/img]",            "{{StatIcon|Dodge}}" )
+	text_edit = text_edit.replacen( "[img=20x20]res://items/stats/elemental_damage.png[/img]", "{{StatIcon|Elemental Damage}}" )
+	text_edit = text_edit.replacen( "[img=20x20]res://items/stats/engineering.png[/img]",      "{{StatIcon|Engineering}}" )
+	text_edit = text_edit.replacen( "[img=20x20]res://items/stats/harvesting.png[/img]",       "{{StatIcon|Harvesting}}" )
+	text_edit = text_edit.replacen( "[img=20x20]res://items/stats/hp_regeneration.png[/img]",  "{{StatIcon|Hp Regeneration}}" )
+	text_edit = text_edit.replacen( "[img=20x20]res://items/stats/lifesteal.png[/img]",        "{{StatIcon|Lifesteal}}" )
+	text_edit = text_edit.replacen( "[img=20x20]res://items/stats/luck.png[/img]",             "{{StatIcon|Luck}}" )
+	text_edit = text_edit.replacen( "[img=20x20]res://items/stats/max_hp.png[/img]",           "{{StatIcon|Max HP}}" )
+	text_edit = text_edit.replacen( "[img=20x20]res://items/stats/melee_damage.png[/img]",     "{{StatIcon|Melee Damage}}" )
+	text_edit = text_edit.replacen( "[img=20x20]res://items/stats/percent_damage.png[/img]",   "{{StatIcon|Percent Damage}}" )
+	text_edit = text_edit.replacen( "[img=20x20]res://items/stats/range.png[/img]",            "{{StatIcon|Range}}" )
+	text_edit = text_edit.replacen( "[img=20x20]res://items/stats/ranged_damage.png[/img]",    "{{StatIcon|Ranged Damage}}" )
+	text_edit = text_edit.replacen( "[img=20x20]res://items/stats/speed.png[/img]",            "{{StatIcon|Speed}}" )
 
 	# Special cases for Invasion mod
 	text_edit = text_edit.replacen( "[color=#CA64EA]", "{{Color|tier3|" ) # purple
-	text_edit = text_edit.replacen( "[img=23x23]res://mods/items/z_info/potatoheart.png[/img]", "" )
+	text_edit = text_edit.replacen( "[img=20x20]res://mods/items/z_info/potatoheart.png[/img]", "" )
 
 	# Line breaks
 	text_edit = text_edit.replacen( "\n", "<br>" )
+
+	## Misc BBCode
+	text_edit = text_edit.replacen( "[i]", "''" )  # italics open (note: using [i] actually makes text huge!)
+	text_edit = text_edit.replacen( "[/i]", "''" ) # italics close
+
+	# Final replacements
+	text_edit = text_edit.replacen( "[+0]", "" )
+	text_edit = text_edit.replacen( "[+-0]", "" )
 
 	return text_edit
 
