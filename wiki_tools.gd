@@ -1,7 +1,7 @@
 extends Node
 
 # Name:     WikiTools
-# Version:  1.2.0
+# Version:  1.3.0
 # Author:   Darkly77
 # Editors:  None (contributors: add your name here and remove this parenthesised text)
 # Repo:     https://github.com/BrotatoMods/Brotato-WikiTools
@@ -20,7 +20,7 @@ extends Node
 
 var mod_config = {
 	mod_link        = 'Mod:Invasion', # Mod page name. Used to show a link back to the mod page
-	mod_version     = '0.5.0',  # Shown above the content
+	mod_version     = '0.6.0',  # Shown above the content
 	mod_unreleased  = true,     # If true, the output states that the shown items are part of an unreleased version
 
 	# Uncomment whichever applies to your mod, or add your own
@@ -151,7 +151,7 @@ func statscard_log():
 	# Output - Start & Extras
 	# ----------------------------------------
 
-	print("[wiki_tools] statscard_log")
+	print("[wiki_tools] statscard_log - Running")
 
 	var html = ""
 
@@ -175,6 +175,7 @@ func statscard_log():
 
 	# Items table
 	# @todo: Move to a func with a loop
+	# @todo: Use str() instead
 	if config.add_table:
 		html += "\n\n\n"
 		html += str(items_arr.size()) + ' new items:'
@@ -284,6 +285,8 @@ func statscard_log():
 	if config.output_save:
 		file_save(html, "user://wiki-output.html")
 
+	print("[wiki_tools] statscard_log - Finished")
+
 
 
 func generate_stats_card(item_data, indent_num = 0):
@@ -371,20 +374,26 @@ func replace_bbcode(text:String)->String:
 	var text_edit = text
 
 	# Dynamic Stats
-	text_edit = text_edit.replacen( "[[color=red]+0[/color]]", "" )
-	text_edit = text_edit.replacen( "[[color=red]-0[/color]]", "" )
-	text_edit = text_edit.replacen( "[[color=red]+-0[/color]]", "" )
-	text_edit = text_edit.replacen( "[[color=#00ff00]+0[/color]]", "" ) # green
-	text_edit = text_edit.replacen( "[[color=#00ff00]-0[/color]]", "" )
-	text_edit = text_edit.replacen( "[[color=#00ff00]+-0[/color]]", "" )
-	text_edit = text_edit.replacen( "[[color=white]+0[/color]]", "" )
-	text_edit = text_edit.replacen( "[[color=white]-0[/color]]", "" )
-	text_edit = text_edit.replacen( "[[color=white]+-0[/color]]", "" )
+	text_edit = text_edit.replacen( "[color=red]+0[/color]",      "" ) # Red
+	text_edit = text_edit.replacen( "[color=red]-0[/color]",      "" )
+	text_edit = text_edit.replacen( "[color=red]+-0[/color]",     "" )
+	text_edit = text_edit.replacen( "[color=#00FF00]+0[/color]",  "" ) # Green
+	text_edit = text_edit.replacen( "[color=#00FF00]-0[/color]",  "" )
+	text_edit = text_edit.replacen( "[color=#00FF00]+-0[/color]", "" )
+	text_edit = text_edit.replacen( "[color=white]+0[/color]",    "" ) # White
+	text_edit = text_edit.replacen( "[color=white]-0[/color]",    "" )
+	text_edit = text_edit.replacen( "[color=white]+-0[/color]",   "" )
 
 	# Colors
-	text_edit = text_edit.replacen( "[color=white]", "{{Color|grey|" )    # used for scaling stat numbers, eg. "{{StatIcon|Armor}}35%"
-	text_edit = text_edit.replacen( "[color=#00ff00]", "{{Color|green|" ) # Utils.POS_COLOR_STR
-	text_edit = text_edit.replacen( "[color=red]", "{{Color|red|" )       # Utils.NEG_COLOR_STR
+	text_edit = text_edit.replacen( "[color=white]",   "{{Color|grey|" )   # used for scaling stat numbers, eg. "35% {{StatIcon|Armor}}"
+	text_edit = text_edit.replacen( "[color=#00FF00]", "{{Color|green|" )  # Utils.POS_COLOR_STR
+	text_edit = text_edit.replacen( "[color=red]",     "{{Color|red|" )    # Utils.NEG_COLOR_STR
+	text_edit = text_edit.replacen( "[color=#555555]", "{{Color|grey|" )   # Utils.GRAY_COLOR_STR
+	text_edit = text_edit.replacen( "[color=#EAE2B0]", "{{Color|cream|" )  # Utils.SECONDARY_FONT_COLOR
+	text_edit = text_edit.replacen( "[color=#C8C8C8]", "{{Color|tier1|" )  # (Tier 1 on the wiki)
+	text_edit = text_edit.replacen( "[color=#4A9BD1]", "{{Color|tier2|" )  # ItemService.TIER_UNCOMMON_COLOR
+	text_edit = text_edit.replacen( "[color=#AD5AFF]", "{{Color|tier3|" )  # ItemService.TIER_RARE_COLOR
+	text_edit = text_edit.replacen( "[color=#FF3B3B]", "{{Color|tier4|" )  # ItemService.TIER_LEGENDARY_COLOR
 	text_edit = text_edit.replacen( "[/color]", "}}" )
 
 	# Normalise Image Sizes
@@ -398,6 +407,7 @@ func replace_bbcode(text:String)->String:
 	text_edit = text_edit.replacen( "[img=17x17]", "[img=20x20]" )
 	text_edit = text_edit.replacen( "[img=18x18]", "[img=20x20]" )
 	text_edit = text_edit.replacen( "[img=19x19]", "[img=20x20]" )
+	text_edit = text_edit.replacen( "[img=20x20]", "[img=20x20]" ) # a non-change, included for completeness. 20 is the base size
 	text_edit = text_edit.replacen( "[img=21x21]", "[img=20x20]" )
 	text_edit = text_edit.replacen( "[img=22x22]", "[img=20x20]" )
 	text_edit = text_edit.replacen( "[img=23x23]", "[img=20x20]" )
@@ -422,9 +432,10 @@ func replace_bbcode(text:String)->String:
 	text_edit = text_edit.replacen( "[img=20x20]res://items/stats/ranged_damage.png[/img]",    "{{StatIcon|Ranged Damage}}" )
 	text_edit = text_edit.replacen( "[img=20x20]res://items/stats/speed.png[/img]",            "{{StatIcon|Speed}}" )
 
-	# Special cases for Invasion mod
+	# Special cases for Invasion mod (and potentially others too)
 	text_edit = text_edit.replacen( "[color=#CA64EA]", "{{Color|tier3|" ) # purple
-	text_edit = text_edit.replacen( "[img=20x20]res://mods/items/z_info/potatoheart.png[/img]", "" )
+	text_edit = text_edit.replacen( "[color=#EAE2B0]", "{{Color|cream|" ) # cream (SECONDARY_FONT_COLOR)
+	text_edit = text_edit.replacen( "[img=20x20]res://mods-unpacked/Darkly77-Invasion/content/items/z_info/potatoheart.png[/img]", "" )
 
 	# Line breaks
 	text_edit = text_edit.replacen( "\n", "<br>" )
@@ -433,7 +444,8 @@ func replace_bbcode(text:String)->String:
 	text_edit = text_edit.replacen( "[i]", "''" )  # italics open (note: using [i] actually makes text huge!)
 	text_edit = text_edit.replacen( "[/i]", "''" ) # italics close
 
-	# Final replacements
+	# Fix non-value dynamic stats
+	text_edit = text_edit.replacen( "[]", "" )
 	text_edit = text_edit.replacen( "[+0]", "" )
 	text_edit = text_edit.replacen( "[+-0]", "" )
 
