@@ -1,7 +1,7 @@
 extends Node
 
 # Name:     WikiTools
-# Version:  1.3.0
+# Version:  1.4.0
 # Author:   Darkly77
 # Editors:  None (contributors: add your name here and remove this parenthesised text)
 # Repo:     https://github.com/BrotatoMods/Brotato-WikiTools
@@ -20,13 +20,24 @@ extends Node
 
 var mod_config = {
 	mod_link        = 'Mod:Invasion', # Mod page name. Used to show a link back to the mod page
-	mod_version     = '0.6.0',  # Shown above the content
+	mod_version     = '0.10.0',  # Shown above the content
 	mod_unreleased  = true,     # If true, the output states that the shown items are part of an unreleased version
 
 	# Uncomment whichever applies to your mod, or add your own
-#	image_prefix = "",                  # Vanilla
-#	image_prefix = "Mod-Extatonion-",   # Mod:Extatonion
+	# image_prefix = "",                  # Vanilla
 	image_prefix = "Space_Gladiators-", # Mod:Invasion
+	#image_prefix = "Mod-Extatonion-",   # Mod:Extatonion
+
+	# Removes this string from the image filename. Potentially helpful if you've prefixed all your images
+	strip_filename_string = "invasion_", # Invasion
+	# strip_filename_string = "_icon", # Vanilla
+
+	# Capitalizes every first letter (Like This) and converts underscores to spaces
+	image_filename_to_proper_case = false,
+
+	# Make image filenames match the item name exactly. Overrules all other options.
+	# Use this for vanilla filenames.
+	image_filename_match_title = false
 }
 
 var config = {
@@ -40,13 +51,16 @@ var config = {
 	output_print  = false,  # If true, prints the output: user://godot.log - %appdata%/Brotato/godot.log
 
 	# Items
-	items_count_vanilla = 158,    # Number of items in vanilla
-	skip_vanilla        = true,   # If true, vanilla items are ignored in the output
-	sort_by_alpha       = true,   # Sort alphabetically (abc)
-	sort_by_tier        = true,   # Sort by rarity/tier
+	items_count_vanilla = 158 + 13,  # Number of items in vanilla
+	skip_vanilla        = true,   # If true, skip vanilla items
+	skip_not_vanilla    = false,   # If true, skip everything except vanilla
 	skip_items = [                # Hide certain items from the loop. Accepts item IDs (`my_id`)
 		# "item_invasion_info"
 	],
+
+	# Items - Sorting
+	sort_by_alpha       = true,   # Sort alphabetically (abc)
+	sort_by_tier        = true,   # Sort by rarity/tier
 
 	# Output: Top Text
 	add_toptext     = true,  # If true, adds extra info above everything else
@@ -95,14 +109,21 @@ func statscard_log():
 	var items_arr = []
 
 	# Copy ItemService.items directly if vanilla isn't skipped and skip_items is empty
-	if !config.skip_vanilla && config.skip_items.size() == 0:
+	if !config.skip_vanilla && !config.skip_not_vanilla && config.skip_items.size() == 0:
 		items_arr = ItemService.items.duplicate()
 	else:
 		# Filter out vanilla & skipped items
 		# (expensive since we're also looping below, but acceptable in this use case)
 		for i in ItemService.items.size():
-			if config.skip_vanilla && (i+1 <= config.items_count_vanilla):
+			# Skip vanilla items (uses `items_count_vanilla`)
+			if config.skip_vanilla && (i + 1 <= config.items_count_vanilla):
 				continue
+
+			# Skip everything except vanilla
+			if config.skip_not_vanilla && (i + 1 > config.items_count_vanilla):
+				continue
+
+			# Skip individual items
 			if config.skip_items.size() > 0 and config.skip_items.find(ItemService.items[i].my_id) != -1:
 				continue
 			items_arr.push_back(ItemService.items[i])
@@ -245,9 +266,9 @@ func statscard_log():
 		html += '\n'
 
 	# Wrap & filter buttons
-	html += '\n\n\n<div class="statscard-grid" style="margin: 0 auto; max-width: 1230px;">'
-	html += '\n	{{StatsCard_GridToggles|extra_btns=1}}'
-	html += '\n\n	<div class="statscard-grid__main" style="max-height: 80vh; overflow: auto; display: flex; flex-wrap: wrap;">'
+	html += '\n\n\n<div class="statscard-grid statscard-grid statscard-grid--fullheight">'
+	html += '\n	{{StatsCard_GridToggles|extra_btns=1|tier_btns=1}}}'
+	html += '\n\n	<div class="statscard-grid__main">'
 
 	# ----------------------------------------
 	# Main Loop
@@ -265,7 +286,7 @@ func statscard_log():
 			# padding_right = "padding-right: 0;"
 
 		html += '' \
-			+ '\n		<div id="' + item_data.my_id + '" class="statscard-grid__item" style="flex: 0 0 auto; padding: 0 20px 20px; margin-left: -20px;">' \
+			+ '\n		<div id="' + item_data.my_id + '" class="statscard-grid__item">' \
 			+ '\n' + generate_stats_card( item_data, 3 ) \
 			+ '\n		</div>' \
 			# + "<!--" + str(item_num) + " of " + str(items_arr.size()) + "-->"
@@ -322,7 +343,7 @@ func generate_stats_card(item_data, indent_num = 0):
 
 	var cat = "Item"
 
-	if item_data.unique:
+	if item_data.max_nb == 1:
 		cat = tr("UNIQUE")
 	elif item_data.max_nb != - 1:
 		cat = Text.text("LIMITED", [str(item_data.max_nb)])
@@ -333,11 +354,21 @@ func generate_stats_card(item_data, indent_num = 0):
 	# Template:StatsCard
 	# ----------------------------------------
 
+	var filename_edit = image_filename.replace(mod_config.strip_filename_string, "")
+
+	if mod_config.image_filename_to_proper_case:
+		# Converts to Proper Case (also replaces underscores with spaces, which
+		# happens to still be valid for wiki pages)
+		filename_edit = filename_edit.capitalize()
+
+	if mod_config.image_filename_match_title:
+		filename_edit = tr(item_data.name)
+
 	statscard += indent + "{{StatsCard"
 	statscard += "\n" + indent + "| name   = " + tr(item_data.name)
 	statscard += "\n" + indent + "| type   = " + config.type
 	statscard += "\n" + indent + "| cat    = " + cat
-	statscard += "\n" + indent + "| image  = " + config.image_prefix + image_filename + ".png"
+	statscard += "\n" + indent + "| image  = " + config.image_prefix + filename_edit + ".png"
 	statscard += "\n" + indent + "| rarity = " + str(item_data.tier + 1)
 	statscard += "\n" + indent + "| tags   = " + arr_join(item_data.tags, " ")
 
@@ -512,10 +543,13 @@ class MyItemSorter:
 		return false
 
 # Join an array as a string
-# https://godotengine.org/qa/20058/elegant-way-to-create-string-from-array-items
 func arr_join(arr, separator = ""):
-	var output = "";
-	for s in arr:
-		output += str(s) + separator
-	output = output.left( output.length() - separator.length() )
-	return output
+	# Old method via: https://godotengine.org/qa/20058/elegant-way-to-create-string-from-array-items
+	#var output = "";
+	#for s in arr:
+	#	output += str(s) + separator
+	#output = output.left( output.length() - separator.length() )
+	#return output
+
+	return separator.join(arr)
+	# return arr.join(separator)
